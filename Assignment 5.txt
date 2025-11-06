@@ -1,0 +1,95 @@
+-------------------------------------------------------------
+DBMSL – GROUP A
+Assignment No. — MySQL Stored Procedure (proc_Grade)
+-------------------------------------------------------------
+
+# Problem Statement
+Write a stored procedure namely proc_Grade for categorization of students.
+If marks scored by students in examination is:
+   • 1500 >= marks >= 990  → Distinction
+   • 989 >= marks >= 900   → First Class
+   • 899 >= marks >= 825   → Higher Second Class
+
+Create an output table with student's Name and Class.
+
+-------------------------------------------------------------
+# TABLE CREATION
+-------------------------------------------------------------
+
+mysql> CREATE TABLE Stud_Marks (
+    -> Name VARCHAR(30),
+    -> Total_Marks INT
+    -> );
+Query OK, 0 rows affected.
+
+mysql> CREATE TABLE Result (
+    -> Name VARCHAR(30),
+    -> Class VARCHAR(25)
+    -> );
+Query OK, 0 rows affected.
+
+-------------------------------------------------------------
+# INSERT SAMPLE DATA
+-------------------------------------------------------------
+
+mysql> INSERT INTO Stud_Marks VALUES ('Tanay', 1450);
+mysql> INSERT INTO Stud_Marks VALUES ('Harsh', 920);
+mysql> INSERT INTO Stud_Marks VALUES ('Aaron', 870);
+mysql> INSERT INTO Stud_Marks VALUES ('Aditya', 800);
+mysql> INSERT INTO Stud_Marks VALUES ('Riya', 995);
+Query OK, 5 rows affected.
+
+-------------------------------------------------------------
+# CREATE STORED PROCEDURE
+-------------------------------------------------------------
+
+mysql> DELIMITER //
+mysql> CREATE PROCEDURE proc_Grade(IN p_name VARCHAR(30), IN p_marks INT)
+    -> BEGIN
+    ->   DECLARE v_class VARCHAR(25);
+    ->   IF p_marks BETWEEN 990 AND 1500 THEN
+    ->       SET v_class = 'Distinction';
+    ->   ELSEIF p_marks BETWEEN 900 AND 989 THEN
+    ->       SET v_class = 'First Class';
+    ->   ELSEIF p_marks BETWEEN 825 AND 899 THEN
+    ->       SET v_class = 'Higher Second Class';
+    ->   ELSE
+    ->       SET v_class = 'Fail';
+    ->   END IF;
+    ->   INSERT INTO Result VALUES (p_name, v_class);
+    -> END //
+mysql> DELIMITER ;
+Query OK, 0 rows affected.
+
+-------------------------------------------------------------
+# CALLING PROCEDURE MANUALLY
+-------------------------------------------------------------
+
+mysql> CALL proc_Grade('Tanay',1450);
+mysql> CALL proc_Grade('Harsh',920);
+mysql> CALL proc_Grade('Aaron',870);
+mysql> CALL proc_Grade('Aditya',800);
+mysql> CALL proc_Grade('Riya',995);
+Query OK, 5 rows affected.
+
+-------------------------------------------------------------
+# DISPLAY FINAL OUTPUT
+-------------------------------------------------------------
+
+mysql> SELECT * FROM Result;
++--------+---------------------+
+| Name   | Class               |
++--------+---------------------+
+| Tanay  | Distinction         |
+| Harsh  | First Class         |
+| Aaron  | Higher Second Class |
+| Aditya | Fail                |
+| Riya   | Distinction         |
++--------+---------------------+
+5 rows in set.
+
+-------------------------------------------------------------
+
+-------------------------------------------------------------
+# END OF ASSIGNMENT
+-------------------------------------------------------------

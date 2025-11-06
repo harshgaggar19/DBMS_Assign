@@ -1,0 +1,201 @@
+-------------------------------------------------------------
+DBMSL – GROUP B
+Assignment — Cursors in PL/SQL (All Types)
+-------------------------------------------------------------
+
+# Problem Statement
+Write simple PL/SQL examples to demonstrate:
+1. Implicit Cursor  
+2. Explicit Cursor  
+3. Cursor FOR Loop  
+4. Parameterized Cursor  
+
+Each example uses simple student data for easy understanding.
+
+-------------------------------------------------------------
+# TABLE CREATION
+-------------------------------------------------------------
+
+mysql> CREATE TABLE students (
+    -> rollno INT,
+    -> name VARCHAR(30),
+    -> marks INT
+    -> );
+Query OK, 0 rows affected.
+
+mysql> INSERT INTO students VALUES
+    -> (1, 'Tanay', 88),
+    -> (2, 'Harsh', 92),
+    -> (3, 'Aarav', 75),
+    -> (4, 'Aditya', 65);
+Query OK, 4 rows affected.
+
+-------------------------------------------------------------
+# 1. IMPLICIT CURSOR EXAMPLE
+-------------------------------------------------------------
+-- Implicit cursors are automatically created by MySQL/PLSQL 
+-- for single-row SELECT, INSERT, UPDATE, DELETE statements.
+
+mysql> DELIMITER //
+mysql> CREATE PROCEDURE implicit_cursor_demo()
+    -> BEGIN
+    ->     UPDATE students SET marks = marks + 5 WHERE marks < 90;
+    ->     SELECT ROW_COUNT() AS 'Rows Updated';
+    -> END //
+mysql> DELIMITER ;
+Query OK, 0 rows affected.
+
+mysql> CALL implicit_cursor_demo();
++---------------+
+| Rows Updated  |
++---------------+
+| 3             |
++---------------+
+
+-------------------------------------------------------------
+# 2. EXPLICIT CURSOR EXAMPLE
+-------------------------------------------------------------
+
+mysql> DELIMITER //
+mysql> CREATE PROCEDURE explicit_cursor_demo()
+    -> BEGIN
+    ->     DECLARE done INT DEFAULT FALSE;
+    ->     DECLARE sname VARCHAR(30);
+    ->     DECLARE smarks INT;
+    ->     DECLARE cur CURSOR FOR SELECT name, marks FROM students;
+    ->     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    ->     OPEN cur;
+    ->     read_loop: LOOP
+    ->         FETCH cur INTO sname, smarks;
+    ->         IF done THEN
+    ->             LEAVE read_loop;
+    ->         END IF;
+    ->         INSERT INTO log_table VALUES (sname, smarks); -- Example action
+    ->     END LOOP;
+    ->     CLOSE cur;
+    -> END //
+mysql> DELIMITER ;
+Query OK, 0 rows affected.
+
+-------------------------------------------------------------
+# 3. CURSOR FOR LOOP EXAMPLE
+-------------------------------------------------------------
+-- Cursor FOR Loop automatically handles OPEN, FETCH, CLOSE.
+
+mysql> DELIMITER //
+mysql> CREATE PROCEDURE cursor_for_loop_demo()
+    -> BEGIN
+    ->     DECLARE total INT DEFAULT 0;
+    ->     FOR rec IN (SELECT * FROM students) DO
+    ->         SET total = total + rec.marks;
+    ->     END FOR;
+    ->     SELECT total AS 'Total Marks of All Students';
+    -> END //
+mysql> DELIMITER ;
+Query OK, 0 rows affected.
+
+mysql> CALL cursor_for_loop_demo();
++----------------------------+
+| Total Marks of All Students |
++----------------------------+
+| 345                        |
++----------------------------+
+
+-------------------------------------------------------------
+# 4. PARAMETERIZED CURSOR EXAMPLE
+-------------------------------------------------------------
+-- Parameterized cursor takes input to filter rows.
+
+mysql> CREATE TABLE new_students (
+    -> rollno INT,
+    -> name VARCHAR(30),
+    -> marks INT
+    -> );
+Query OK, 0 rows affected.
+
+mysql> DELIMITER //
+mysql> CREATE PROCEDURE parameterized_cursor_demo(IN min_marks INT)
+    -> BEGIN
+    ->     DECLARE done INT DEFAULT FALSE;
+    ->     DECLARE rno INT;
+    ->     DECLARE sname VARCHAR(30);
+    ->     DECLARE smarks INT;
+    ->     DECLARE cur CURSOR FOR
+    ->         SELECT rollno, name, marks FROM students WHERE marks >= min_marks;
+    ->     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    ->     OPEN cur;
+    ->     read_loop: LOOP
+    ->         FETCH cur INTO rno, sname, smarks;
+    ->         IF done THEN
+    ->             LEAVE read_loop;
+    ->         END IF;
+    ->         INSERT INTO new_students VALUES (rno, sname, smarks);
+    ->     END LOOP;
+    ->     CLOSE cur;
+    -> END //
+mysql> DELIMITER ;
+Query OK, 0 rows affected.
+
+-------------------------------------------------------------
+# EXECUTION (PARAMETERIZED CURSOR)
+-------------------------------------------------------------
+
+mysql> CALL parameterized_cursor_demo(80);
+Query OK, 1 row affected.
+
+mysql> SELECT * FROM new_students;
++--------+--------+--------+
+| rollno | name   | marks  |
++--------+--------+--------+
+| 1      | Tanay  | 93     |
+| 2      | Harsh  | 97     |
++--------+--------+--------+
+2 rows in set.
+
+-------------------------------------------------------------
+# 5. MERGING DATA USING PARAMETERIZED CURSOR
+-------------------------------------------------------------
+
+mysql> DELIMITER //
+mysql> CREATE PROCEDURE merge_student_data()
+    -> BEGIN
+    ->     DECLARE done INT DEFAULT FALSE;
+    ->     DECLARE rno INT;
+    ->     DECLARE sname VARCHAR(30);
+    ->     DECLARE smarks INT;
+    ->     DECLARE cur CURSOR FOR SELECT rollno, name, marks FROM new_students;
+    ->     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    ->     OPEN cur;
+    ->     read_loop: LOOP
+    ->         FETCH cur INTO rno, sname, smarks;
+    ->         IF done THEN
+    ->             LEAVE read_loop;
+    ->         END IF;
+    ->         UPDATE students
+    ->             SET marks = smarks
+    ->             WHERE rollno = rno;
+    ->     END LOOP;
+    ->     CLOSE cur;
+    -> END //
+mysql> DELIMITER ;
+Query OK, 0 rows affected.
+
+mysql> CALL merge_student_data();
+Query OK, 0 rows affected.
+
+mysql> SELECT * FROM students;
++--------+--------+--------+
+| rollno | name   | marks  |
++--------+--------+--------+
+| 1      | Tanay  | 93     |
+| 2      | Harsh  | 97     |
+| 3      | Aarav  | 75     |
+| 4      | Aditya | 65     |
++--------+--------+--------+
+
+-------------------------------------------------------------
+# END OF ASSIGNMENT
+-------------------------------------------------------------

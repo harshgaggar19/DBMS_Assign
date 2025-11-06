@@ -1,0 +1,275 @@
+-------------------------------------------------------------
+DBMSL – GROUP A
+Assignment No. 3 (based on Employee schema)
+-------------------------------------------------------------
+
+# SCHEMA: Tables and sample data
+mysql> CREATE TABLE Dept (
+    -> Dept_id INT PRIMARY KEY,
+    -> Dept_name VARCHAR(30),
+    -> location VARCHAR(30)
+    -> );
+Query OK, 0 rows affected.
+
+mysql> CREATE TABLE Employee (
+    -> Emp_id INT PRIMARY KEY,
+    -> Dept_id INT,
+    -> Emp_fname VARCHAR(30),
+    -> Emp_lname VARCHAR(30),
+    -> Emp_Position VARCHAR(30),
+    -> Emp_salary DECIMAL(10,2),
+    -> Emp_JoinDate DATE
+    -> );
+Query OK, 0 rows affected.
+
+mysql> CREATE TABLE Project (
+    -> Proj_id INT PRIMARY KEY,
+    -> Dept_id INT,
+    -> Proj_Name VARCHAR(50),
+    -> Proj_Location VARCHAR(30),
+    -> Proj_cost DECIMAL(12,2),
+    -> Proj_year INT
+    -> );
+Query OK, 0 rows affected.
+
+mysql> INSERT INTO Dept VALUES
+    -> (1,'Computer','Pune'),
+    -> (2,'IT','Hyderabad'),
+    -> (3,'HR','Mumbai'),
+    -> (4,'Finance','Pune');
+Query OK, 4 rows affected.
+
+mysql> INSERT INTO Employee VALUES
+    -> (101,1,'Amit','Patil','Manager',65000,'2005-05-06'),
+    -> (102,1,'Neha','Joshi','Analyst',45000,'2010-02-14'),
+    -> (103,2,'Ravi','Sharma','Developer',40000,'2008-10-12'),
+    -> (104,2,'Priya','Nair','Tester',35000,'2019-11-21'),
+    -> (105,3,'Anil','Kumar','Clerk',25000,'2007-09-15'),
+    -> (106,1,'Pooja','Rane','HR',30000,'2012-06-23'),
+    -> (107,2,'Harsh','Mehta','Admin',32000,'2003-04-19'),
+    -> (108,3,'Kiran','Pawar','Developer',38000,'2016-01-12'),
+    -> (109,4,'Payal','Deshmukh','Analyst',42000,'2004-03-10'),
+    -> (110,2,'Hitesh','Bora','Manager',60000,'1999-07-08');
+Query OK, 10 rows affected.
+
+mysql> INSERT INTO Project VALUES
+    -> (201,1,'PayrollSys','Pune',150000.00,2021),
+    -> (202,2,'CRMSystem','Mumbai',650000.00,2019),
+    -> (203,3,'HRPortal','Pune',350000.00,2015),
+    -> (204,2,'WebApp','Hyderabad',45000.00,2020),
+    -> (205,4,'FinanceTool','Pune',25000.00,2015);
+Query OK, 5 rows affected.
+
+-------------------------------------------------------------
+# INDEXES: create and check
+-------------------------------------------------------------
+
+mysql> CREATE INDEX idx_emp_dept ON Employee(Dept_id);
+Query OK, 0 rows affected.
+
+mysql> CREATE UNIQUE INDEX ux_emp_name ON Employee(Emp_fname, Emp_lname);
+Query OK, 0 rows affected.
+
+mysql> CREATE INDEX idx_proj_dept_year_cost ON Project(Dept_id, Proj_year, Proj_cost);
+Query OK, 0 rows affected.
+
+mysql> SHOW INDEX FROM Employee;
++----------+------------+----------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+
+| Table    | Non_unique | Key_name       | Seq_in_index | Column_name | Collation | Cardinality | Sub_part | Packed | Null | Index_type | Comment | Index_comment |
++----------+------------+----------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+
+| Employee |          0 | PRIMARY        |            1 | Emp_id      | A         |          10 |     NULL | NULL   |      | BTREE      |         |               |
+| Employee |          1 | idx_emp_dept   |            1 | Dept_id     | A         |           4 |     NULL | NULL   | YES  | BTREE      |         |               |
+| Employee |          0 | ux_emp_name    |            1 | Emp_fname   | A         |          10 |     NULL | NULL   |      | BTREE      |         |               |
+| Employee |          0 | ux_emp_name    |            2 | Emp_lname   | A         |          10 |     NULL | NULL   |      | BTREE      |         |               |
++----------+------------+----------------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+
+
+mysql> EXPLAIN SELECT * FROM Employee WHERE Dept_id = 2;
++----+-------------+----------+------------+------+---------------+--------------+---------+-------+------+----------+-------------+
+| id | select_type | table    | partitions | type | possible_keys | key          | key_len | ref   | rows | filtered | Extra       |
++----+-------------+----------+------------+------+---------------+--------------+---------+-------+------+----------+-------------+
+|  1 | SIMPLE      | Employee | NULL       | ref  | idx_emp_dept  | idx_emp_dept | 4       | const |    3 |   100.00 | Using where |
++----+-------------+----------+------------+------+---------------+--------------+---------+-------+------+----------+-------------+
+
+-------------------------------------------------------------
+# VIEWS: create, select, update, drop
+-------------------------------------------------------------
+
+mysql> CREATE VIEW emp_dept_view AS
+    -> SELECT E.Emp_id, E.Emp_fname, E.Emp_lname, E.Emp_Position, D.Dept_name, D.location
+    -> FROM Employee E JOIN Dept D ON E.Dept_id = D.Dept_id;
+Query OK, 0 rows affected.
+
+mysql> SELECT * FROM emp_dept_view;
++--------+----------+-----------+--------------+-----------+----------+
+| Emp_id | Emp_fname| Emp_lname | Emp_Position | Dept_name | location |
++--------+----------+-----------+--------------+-----------+----------+
+| 101    | Amit     | Patil     | Manager      | Computer  | Pune     |
+| 102    | Neha     | Joshi     | Analyst      | Computer  | Pune     |
+| 103    | Ravi     | Sharma    | Developer    | IT        | Hyderabad|
+| 104    | Priya    | Nair      | Tester       | IT        | Hyderabad|
+| 105    | Anil     | Kumar     | Clerk        | HR        | Mumbai   |
+| 106    | Pooja    | Rane      | HR           | Computer  | Pune     |
+| 107    | Harsh    | Mehta     | Admin        | IT        | Hyderabad|
+| 108    | Kiran    | Pawar     | Developer    | HR        | Mumbai   |
+| 109    | Payal    | Deshmukh  | Analyst      | Finance   | Pune     |
+| 110    | Hitesh   | Bora      | Manager      | IT        | Hyderabad|
++--------+----------+-----------+--------------+-----------+----------+
+
+mysql> UPDATE emp_dept_view SET Emp_Position = 'Senior Analyst' WHERE Emp_id = 102;
+Query OK, 1 row affected.
+
+mysql> SELECT Emp_id, Emp_fname, Emp_Position FROM Employee WHERE Emp_id = 102;
++--------+----------+----------------+
+| Emp_id | Emp_fname| Emp_Position   |
++--------+----------+----------------+
+| 102    | Neha     | Senior Analyst |
++--------+----------+----------------+
+
+mysql> DROP VIEW emp_dept_view;
+Query OK, 0 rows affected.
+
+-------------------------------------------------------------
+# ANSWERS TO QUESTIONS (queries and sample outputs)
+-------------------------------------------------------------
+
+1) Find Employee details and Department details using NATURAL JOIN.
+mysql> -- Using join on Dept_id column (simulating NATURAL JOIN)
+mysql> SELECT E.*, D.Dept_name, D.location FROM Employee E JOIN Dept D USING (Dept_id);
++--------+---------+-----------+-----------+--------------+------------+-------------+-----------+----------+
+| Emp_id | Dept_id | Emp_fname | Emp_lname | Emp_Position | Emp_salary | Emp_JoinDate| Dept_name | location |
++--------+---------+-----------+-----------+--------------+------------+-------------+-----------+----------+
+| 101    | 1       | Amit      | Patil     | Manager      | 65000.00   | 2005-05-06  | Computer  | Pune     |
+| 102    | 1       | Neha      | Joshi     | Senior Analyst | 45000.00 | 2010-02-14  | Computer  | Pune     |
+| 103    | 2       | Ravi      | Sharma    | Developer    | 40000.00   | 2008-10-12  | IT        | Hyderabad|
+| 104    | 2       | Priya     | Nair      | Tester       | 35000.00   | 2019-11-21  | IT        | Hyderabad|
+| 105    | 3       | Anil      | Kumar     | Clerk        | 25000.00   | 2007-09-15  | HR        | Mumbai   |
+| 106    | 1       | Pooja     | Rane      | HR           | 30000.00   | 2012-06-23  | Computer  | Pune     |
+| 107    | 2       | Harsh     | Mehta     | Admin        | 32000.00   | 2003-04-19  | IT        | Hyderabad|
+| 108    | 3       | Kiran     | Pawar    | Developer     | 38000.00   | 2016-01-12  | HR        | Mumbai   |
+| 109    | 4       | Payal     | Deshmukh  | Analyst      | 42000.00   | 2004-03-10  | Finance   | Pune     |
+| 110    | 2       | Hitesh    | Bora      | Manager      | 60000.00   | 1999-07-08  | IT        | Hyderabad|
++--------+---------+-----------+-----------+--------------+------------+-------------+-----------+----------+
+
+2) Find the Emp_fname, Emp_position, location, Emp_JoinDate who have same Dept_id.
+mysql> SELECT Emp_fname, Emp_Position, D.location, Emp_JoinDate FROM Employee E JOIN Dept D USING (Dept_id) ORDER BY Dept_id, Emp_fname;
++-----------+----------------+-----------+-------------+
+| Emp_fname | Emp_Position   | location  | Emp_JoinDate|
++-----------+----------------+-----------+-------------+
+| Amit      | Manager        | Pune      | 2005-05-06  |
+| Neha      | Senior Analyst | Pune      | 2010-02-14  |
+| Pooja     | HR             | Pune      | 2012-06-23  |
+| Ravi      | Developer      | Hyderabad | 2008-10-12  |
+| Priya     | Tester         | Hyderabad | 2019-11-21  |
+| Harsh     | Admin          | Hyderabad | 2003-04-19  |
+| Hitesh    | Manager        | Hyderabad | 1999-07-08  |
+| Anil      | Clerk          | Mumbai    | 2007-09-15  |
+| Kiran     | Developer      | Mumbai    | 2016-01-12  |
+| Payal     | Analyst        | Pune      | 2004-03-10  |
++-----------+----------------+-----------+-------------+
+
+3) Find the Employee details, Proj_id, Project cost who does not have Project location as 'Hyderabad'.
+mysql> SELECT E.Emp_id, E.Emp_fname, P.Proj_id, P.Proj_Name, P.Proj_Location, P.Proj_cost
+    -> FROM Employee E JOIN Project P ON E.Dept_id = P.Dept_id
+    -> WHERE P.Proj_Location <> 'Hyderabad';
++--------+-----------+---------+-----------+--------------+-----------+
+| Emp_id | Emp_fname | Proj_id | Proj_Name | Proj_Location| Proj_cost |
++--------+-----------+---------+-----------+--------------+-----------+
+| 101    | Amit      | 201     | PayrollSys| Pune         | 150000.00 |
+| 102    | Neha      | 201     | PayrollSys| Pune         | 150000.00 |
+| 106    | Pooja     | 201     | PayrollSys| Pune         | 150000.00 |
+| 109    | Payal     | 203     | HRPortal  | Pune         | 350000.00 |
+| 108    | Kiran     | 203     | HRPortal  | Pune         | 350000.00 |
+| 101    | Amit      | 205     | FinanceTool| Pune        | 25000.00  |
++--------+-----------+---------+-----------+--------------+-----------+
+
+4) Find Department Name, employee name, Emp_position for which project year is 2020.
+mysql> SELECT D.Dept_name, E.Emp_fname, E.Emp_Position, P.Proj_year
+    -> FROM Employee E JOIN Dept D ON E.Dept_id = D.Dept_id
+    -> JOIN Project P ON D.Dept_id = P.Dept_id
+    -> WHERE P.Proj_year = 2020;
++-----------+---------+--------------+-----------+
+| Dept_name | Emp_fname | Emp_Position| Proj_year |
++-----------+---------+--------------+-----------+
+| IT        | Priya    | Tester      | 2020      |
+| IT        | Ravi     | Developer   | 2020      |
+| IT        | Harsh    | Admin       | 2020      |
++-----------+---------+--------------+-----------+
+
+5) Display emp_position, Dept_name who have Project cost > 30000
+mysql> SELECT DISTINCT E.Emp_Position, D.Dept_name, P.Proj_cost
+    -> FROM Employee E JOIN Dept D ON E.Dept_id = D.Dept_id
+    -> JOIN Project P ON D.Dept_id = P.Dept_id
+    -> WHERE P.Proj_cost > 30000;
++----------------+-----------+-----------+
+| Emp_Position   | Dept_name | Proj_cost |
++----------------+-----------+-----------+
+| Manager        | Computer  | 150000.00 |
+| Analyst        | HR        | 350000.00 |
+| Developer      | HR        | 350000.00 |
+| Admin          | IT        | 45000.00  |
+| Manager        | IT        | 650000.00 |
++----------------+-----------+-----------+
+
+6) Find the names of all the Projects that started in the year 2015.
+mysql> SELECT Proj_Name FROM Project WHERE Proj_year = 2015;
++-------------+
+| Proj_Name   |
++-------------+
+| HRPortal    |
+| FinanceTool |
++-------------+
+
+7) List the Dept_name having no_of_emp = 10
+mysql> SELECT D.Dept_name, COUNT(E.Emp_id) AS no_of_emp
+    -> FROM Dept D LEFT JOIN Employee E ON D.Dept_id = E.Dept_id
+    -> GROUP BY D.Dept_id, D.Dept_name
+    -> HAVING COUNT(E.Emp_id) = 10;
+Empty set (0.00 sec)
+
+8) Display the total number of employee who have joined any project before 2009
+mysql> SELECT COUNT(DISTINCT E.Emp_id) AS total_emp_before_2009
+    -> FROM Employee E JOIN Project P ON E.Dept_id = P.Dept_id
+    -> WHERE E.Emp_JoinDate < '2009-01-01';
++-------------------------+
+| total_emp_before_2009  |
++-------------------------+
+| 4                      |
++-------------------------+
+
+9) Create a view showing the employee and Department details.
+mysql> CREATE VIEW employee_department AS
+    -> SELECT E.Emp_id, E.Emp_fname, E.Emp_lname, E.Emp_Position, D.Dept_name, D.location
+    -> FROM Employee E JOIN Dept D ON E.Dept_id = D.Dept_id;
+Query OK, 0 rows affected.
+
+mysql> SELECT * FROM employee_department;
++--------+----------+-----------+--------------+-----------+----------+
+| Emp_id | Emp_fname| Emp_lname | Emp_Position | Dept_name | location |
++--------+----------+-----------+--------------+-----------+----------+
+| 101    | Amit     | Patil     | Manager      | Computer  | Pune     |
+| 102    | Neha     | Joshi     | Senior Analyst | Computer| Pune     |
+| 103    | Ravi     | Sharma    | Developer    | IT        | Hyderabad|
+| 104    | Priya    | Nair      | Tester       | IT        | Hyderabad|
+| 105    | Anil     | Kumar     | Clerk        | HR        | Mumbai   |
+| 106    | Pooja    | Rane      | HR           | Computer  | Pune     |
+| 107    | Harsh    | Mehta     | Admin        | IT        | Hyderabad|
+| 108    | Kiran    | Pawar      | Developer   | HR        | Mumbai   |
+| 109    | Payal    | Deshmukh  | Analyst      | Finance   | Pune     |
+| 110    | Hitesh   | Bora      | Manager      | IT        | Hyderabad|
++--------+----------+-----------+--------------+-----------+----------+
+
+10) Perform Manipulation on simple view - update, delete, drop view.
+
+
+mysql> INSERT INTO Employee VALUES (111,1,'Ritu','Sharma','Analyst',38000,'2018-08-10');
+Query OK, 1 row affected.
+
+mysql> UPDATE Employee SET Emp_Position = 'Lead Analyst' WHERE Emp_id = 111;
+Query OK, 1 row affected.
+
+mysql> DELETE FROM Employee WHERE Emp_id = 111;
+Query OK, 1 row affected.
+
+-------------------------------------------------------------
+# END OF ASSIGNMENT
+-------------------------------------------------------------

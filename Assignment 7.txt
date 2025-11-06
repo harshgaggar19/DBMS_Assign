@@ -1,0 +1,133 @@
+-------------------------------------------------------------
+DBMSL – GROUP B
+Assignment — Database Triggers (Selected Types)
+-------------------------------------------------------------
+
+mysql> CREATE TABLE students (
+    -> rollno INT PRIMARY KEY,
+    -> name VARCHAR(30),
+    -> marks INT
+    -> );
+Query OK, 0 rows affected.
+
+-------------------------------------------------------------
+# BEFORE INSERT TRIGGER
+-------------------------------------------------------------
+mysql> DELIMITER //
+mysql> CREATE TRIGGER before_insert_check
+    -> BEFORE INSERT ON students
+    -> FOR EACH ROW
+    -> BEGIN
+    ->   IF NEW.marks < 0 THEN
+    ->     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Marks cannot be negative!';
+    ->   END IF;
+    -> END //
+mysql> DELIMITER ;
+Query OK, 0 rows affected.
+
+mysql> INSERT INTO students VALUES (1, 'Tanay', 85);
+Query OK, 1 row affected.
+
+mysql> INSERT INTO students VALUES (2, 'Aarav', -10);
+ERROR 1644 (45000): Marks cannot be negative!
+
+mysql> SELECT * FROM students;
++--------+--------+--------+
+| rollno | name   | marks  |
++--------+--------+--------+
+| 1      | Tanay  | 85     |
++--------+--------+--------+
+
+-------------------------------------------------------------
+# AFTER UPDATE TRIGGER
+-------------------------------------------------------------
+mysql> DELIMITER //
+mysql> CREATE TABLE update_log (
+    -> rollno INT,
+    -> old_marks INT,
+    -> new_marks INT
+    -> );
+Query OK, 0 rows affected.
+
+mysql> CREATE TRIGGER after_update_marks
+    -> AFTER UPDATE ON students
+    -> FOR EACH ROW
+    -> BEGIN
+    ->   INSERT INTO update_log VALUES (OLD.rollno, OLD.marks, NEW.marks);
+    -> END //
+mysql> DELIMITER ;
+Query OK, 0 rows affected.
+
+mysql> UPDATE students SET marks = 95 WHERE rollno = 1;
+Query OK, 1 row affected.
+
+mysql> SELECT * FROM update_log;
++--------+-----------+-----------+
+| rollno | old_marks | new_marks |
++--------+-----------+-----------+
+| 1      | 85        | 95        |
++--------+-----------+-----------+
+
+-------------------------------------------------------------
+# LIBRARY AUDIT TRIGGER
+-------------------------------------------------------------
+mysql> CREATE TABLE Library (
+    -> book_id INT PRIMARY KEY,
+    -> book_name VARCHAR(50),
+    -> author VARCHAR(30),
+    -> status VARCHAR(10)
+    -> );
+Query OK, 0 rows affected.
+
+mysql> CREATE TABLE Library_Audit (
+    -> book_id INT,
+    -> book_name VARCHAR(50),
+    -> author VARCHAR(30),
+    -> status VARCHAR(10),
+    -> action_type VARCHAR(20),
+    -> action_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    -> );
+Query OK, 0 rows affected.
+
+mysql> DELIMITER //
+mysql> CREATE TRIGGER library_audit_trigger
+    -> AFTER UPDATE ON Library
+    -> FOR EACH ROW
+    -> BEGIN
+    ->   INSERT INTO Library_Audit (book_id, book_name, author, status, action_type)
+    ->   VALUES (OLD.book_id, OLD.book_name, OLD.author, OLD.status, 'UPDATED');
+    -> END //
+mysql> DELIMITER ;
+
+mysql> DELIMITER //
+mysql> CREATE TRIGGER library_delete_audit
+    -> AFTER DELETE ON Library
+    -> FOR EACH ROW
+    -> BEGIN
+    ->   INSERT INTO Library_Audit (book_id, book_name, author, status, action_type)
+    ->   VALUES (OLD.book_id, OLD.book_name, OLD.author, OLD.status, 'DELETED');
+    -> END //
+mysql> DELIMITER ;
+
+mysql> INSERT INTO Library VALUES
+    -> (1, 'DBMS Concepts', 'Navathe', 'Available'),
+    -> (2, 'Operating Systems', 'Galvin', 'Issued');
+Query OK, 2 rows affected.
+
+mysql> UPDATE Library SET status = 'Issued' WHERE book_id = 1;
+Query OK, 1 row affected.
+
+mysql> DELETE FROM Library WHERE book_id = 2;
+Query OK, 1 row affected.
+
+mysql> SELECT * FROM Library_Audit;
++---------+--------------------+---------+-----------+-------------+---------------------+
+| book_id | book_name          | author  | status    | action_type | action_time         |
++---------+--------------------+---------+-----------+-------------+---------------------+
+| 1       | DBMS Concepts      | Navathe | Available | UPDATED     | 2025-10-28 21:25:00 |
+| 2       | Operating Systems  | Galvin  | Issued    | DELETED     | 2025-10-28 21:25:10 |
++---------+--------------------+---------+-----------+-------------+---------------------+
+
+-------------------------------------------------------------
+# END OF ASSIGNMENT
+-------------------------------------------------------------

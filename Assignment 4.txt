@@ -1,0 +1,123 @@
+-------------------------------------------------------------
+DBMSL – GROUP A
+Assignment No. — MySQL Control Structure & Exception Handling
+-------------------------------------------------------------
+
+# Problem Statement
+Write a MySQL block using control structure and exception handling.
+Schema:
+1. Borrower(Roll, Name, DateOfIssue, NameOfBook, Status)
+2. Fine(Roll, Date, Amt)
+
+Accept Roll and NameOfBook as input.
+If number of days since issue is:
+   • 15–30 days → Rs. 5 per day
+   • >30 days   → Rs. 50 per day
+If book is submitted, status changes from 'I' (Issued) to 'R' (Returned).
+If fine applies, insert record into Fine table.
+
+-------------------------------------------------------------
+# TABLE CREATION
+-------------------------------------------------------------
+
+mysql> CREATE TABLE Borrower (
+    -> Roll INT,
+    -> Name VARCHAR(30),
+    -> DateOfIssue DATE,
+    -> NameOfBook VARCHAR(50),
+    -> Status CHAR(1)
+    -> );
+Query OK, 0 rows affected.
+
+mysql> CREATE TABLE Fine (
+    -> Roll INT,
+    -> Date DATE,
+    -> Amt DECIMAL(10,2)
+    -> );
+Query OK, 0 rows affected.
+
+-------------------------------------------------------------
+# INSERT SAMPLE DATA
+-------------------------------------------------------------
+
+mysql> INSERT INTO Borrower VALUES
+    -> (1,'Tanay','2025-09-25','DBMS','I'),
+    -> (2,'Harsh','2025-10-01','CN','I'),
+    -> (3,'Aaron','2025-09-10','OOP','I');
+Query OK, 3 rows affected.
+
+-------------------------------------------------------------
+# PROCEDURE CREATION
+-------------------------------------------------------------
+
+mysql> DELIMITER //
+mysql> CREATE PROCEDURE return_book(IN p_roll INT, IN p_book VARCHAR(50))
+    -> BEGIN
+    ->   DECLARE v_days INT;
+    ->   DECLARE v_amt DECIMAL(10,2);
+    ->   DECLARE v_error BOOLEAN DEFAULT FALSE;
+    ->
+    ->   BEGIN
+    ->     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION SET v_error = TRUE;
+    ->     SELECT DATEDIFF(CURDATE(), DateOfIssue)
+    ->       INTO v_days FROM Borrower
+    ->       WHERE Roll = p_roll AND NameOfBook = p_book;
+    ->
+    ->     IF v_days BETWEEN 15 AND 30 THEN
+    ->         SET v_amt = v_days * 5;
+    ->     ELSEIF v_days > 30 THEN
+    ->         SET v_amt = v_days * 50;
+    ->     ELSE
+    ->         SET v_amt = 0;
+    ->     END IF;
+    ->
+    ->     UPDATE Borrower
+    ->     SET Status = 'R'
+    ->     WHERE Roll = p_roll AND NameOfBook = p_book;
+    ->
+    ->     IF v_amt > 0 THEN
+    ->         INSERT INTO Fine VALUES(p_roll, CURDATE(), v_amt);
+    ->     END IF;
+    ->
+    ->     IF v_error THEN
+    ->         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error processing record!';
+    ->     END IF;
+    ->   END;
+    -> END //
+mysql> DELIMITER ;
+Query OK, 0 rows affected.
+
+-------------------------------------------------------------
+# EXECUTION / OUTPUT
+-------------------------------------------------------------
+
+mysql> CALL return_book(1,'DBMS');
+mysql> CALL return_book(2,'CN');
+mysql> CALL return_book(3,'OOP');
+Query OK, 3 rows affected.
+
+mysql> SELECT * FROM Borrower;
++------+-------+-------------+------------+--------+
+| Roll | Name  | DateOfIssue | NameOfBook | Status |
++------+-------+-------------+------------+--------+
+| 1    | Tanay | 2025-09-25  | DBMS       | R      |
+| 2    | Harsh | 2025-10-01  | CN         | R      |
+| 3    | Aaron | 2025-09-10  | OOP        | R      |
++------+-------+-------------+------------+--------+
+3 rows in set.
+
+mysql> SELECT * FROM Fine;
++------+------------+--------+
+| Roll | Date       | Amt    |
++------+------------+--------+
+| 1    | 2025-8-28 | 1650.0 |
+| 2    | 2025-8-28 | 135.0  |
+| 3    | 2025-8-28 | 2400.0 |
++------+------------+--------+
+3 rows in set.
+
+
+
+-------------------------------------------------------------
+# END OF ASSIGNMENT
+-------------------------------------------------------------
